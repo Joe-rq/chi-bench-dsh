@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chi-bench-dsh"
+version = "0.1.0"
+description = "DeepSeek Harness adapter for the CHI-Bench healthcare workflow benchmark"
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+smoke = ["deepseek-harness-sdk==0.2.2rc2"]
+
+[project.scripts]
+cb-dsh = "chi_dsh.cli:main"
+
+[tool.setuptools]
+packages = ["chi_dsh"]
