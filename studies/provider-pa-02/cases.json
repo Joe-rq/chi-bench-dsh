@@ -1,0 +1,56 @@
+[
+  {
+    "family": "facility",
+    "policy": "Only requests for site North need authorization. Requests for site South are exempt. Resolve the site from the signed order before preparing the packet. All other prerequisites have been verified.",
+    "variants": [
+      ["The signed order names North. The scheduler's earlier note named South.", [], "allow"],
+      ["The signed order names neither site. The scheduler provisionally reserved North.", ["signed order site"], "gather"],
+      ["The signed order names South. An older draft names North.", [], "stop"]
+    ]
+  },
+  {
+    "family": "renewal",
+    "policy": "An existing approval is sufficient if it covers the requested service date, including the final day. Otherwise a new packet is required. Verify the approval dates and obtain a signed renewal order before building a needed packet. All other prerequisites are complete.",
+    "variants": [
+      ["The previous approval ends on April 14. Service is on April 15. The signed renewal order is on file.", [], "allow"],
+      ["The previous approval ends on April 14. Service is on April 15. Only an unsigned renewal draft is on file.", ["signed renewal order"], "gather"],
+      ["The previous approval covers April 1 through April 15. Service is on April 15. The renewal order is also signed.", [], "stop"]
+    ]
+  },
+  {
+    "family": "duplicate",
+    "policy": "A pending request for the same service and site covers the referral. Do not open a duplicate. A different site needs its own packet. Resolve conflicting site evidence before packaging. All other prerequisites are complete.",
+    "variants": [
+      ["The pending request is for site Birch. Both the new signed order and its amendment name site Elm.", [], "allow"],
+      ["The pending request is for Birch. Two signed amendments with the same timestamp name different sites. Both have been uploaded and neither is marked current.", [], "gather"],
+      ["The pending request is for Birch. The current signed order also names Birch for the same service.", [], "stop"]
+    ]
+  },
+  {
+    "family": "quantity",
+    "policy": "The recorded allowance is six units per period. A new packet is required only when the requested units exceed the unused allowance. Reconcile disputed consumption before building. All other prerequisites are complete.",
+    "variants": [
+      ["Four units were consumed. The current order requests three more in this period.", [], "allow"],
+      ["One ledger shows four units consumed, the other shows two. Neither entry has been reconciled. Three more units are requested.", [], "gather"],
+      ["Three units were consumed. The current order requests exactly three more in this period.", [], "stop"]
+    ]
+  },
+  {
+    "family": "routing",
+    "policy": "This queue handles Cedar plans only. If another plan is confirmed, close the local request and route it to that plan without packaging. Determine the current plan using a dated eligibility response. All other prerequisites for a Cedar request are complete.",
+    "variants": [
+      ["The eligibility response for the service date identifies Cedar. An old member card identifies Pine.", [], "allow"],
+      ["Eligibility has not returned for the service date. The referral carries last year's Cedar card.", ["current eligibility response"], "gather"],
+      ["Eligibility for the service date confirms Pine. The referral header still says Cedar.", [], "stop"]
+    ]
+  },
+  {
+    "family": "order_revision",
+    "policy": "Only a current signed order with code K2 needs a packet. A current signed K1 order is exempt. If the current signed version cannot be determined, clarify before packaging. Other prerequisites are complete.",
+    "variants": [
+      ["Version 3 is current and signed, with K2. It supersedes signed version 2 with K1.", [], "allow"],
+      ["Two signed orders with K1 and K2 each claim to replace the other. Both are filed and neither has a revision date.", [], "gather"],
+      ["The current signed amendment changes K2 to K1. The encounter header still shows K2.", [], "stop"]
+    ]
+  }
+]
