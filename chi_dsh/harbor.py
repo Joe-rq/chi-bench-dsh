@@ -13,6 +13,7 @@ from .trajectory import export
 
 class DshAgent(BaseInstalledAgent):
     SUPPORTS_ATIF = True
+    scorer = ()
 
     @staticmethod
     def name():
@@ -51,6 +52,7 @@ class DshAgent(BaseInstalledAgent):
                 urls[0],
                 "--model",
                 model,
+                *(["--scorer", *self.scorer] if self.scorer else []),
             ]
         )
         await self.exec_as_agent(
@@ -79,3 +81,72 @@ class DshAgent(BaseInstalledAgent):
         tmp.replace(path)
         context.n_input_tokens = trajectory.final_metrics.total_prompt_tokens
         context.n_output_tokens = trajectory.final_metrics.total_completion_tokens
+
+
+class DshReviewAgent(DshAgent):
+    """Dedicated arm with identical DSH model and a local CPU decision model."""
+
+    scorer = (
+        "/tmp/chi-review-venv/bin/python",
+        "/tmp/advisor.py",
+        "/tmp/choice_protocol.py",
+        "/tmp/chi-review-base",
+        "/tmp/chi-review-adapter",
+    )
+
+    @staticmethod
+    def name():
+        return "dsh-rejev"
+
+    async def install(self, environment):
+        import hashlib
+        from importlib.resources import files
+
+        assets = []
+        for key, target, weight, expected in (
+            (
+                "CHI_REJEV_BASE",
+                self.scorer[-2],
+                "model-00000-of-00001.safetensors",
+                "14fb8e7f0a18d53d1f239773758bf581cee7e456a4523a54622c3a245b64402c",
+            ),
+            (
+                "CHI_REJEV_ADAPTER",
+                self.scorer[-1],
+                "adapter_model.safetensors",
+                "294b07beac96e42e4a69af41c1121bc2aa0a18cf4634ef2ea9e17b8032b9973e",
+            ),
+        ):
+            if not os.environ.get(key):
+                raise ValueError(f"Set {key} to a local pinned weight snapshot")
+            root = Path(os.environ[key])
+            with (root / weight).open("rb") as f:
+                if hashlib.file_digest(f, "sha256").hexdigest() != expected:
+                    raise ValueError(f"Unexpected weights in {key}")
+            assets.append((root, target, weight))
+        await super().install(environment)
+        await self.exec_as_root(
+            environment,
+            command=(
+                "uv pip install --python /workspace/.venv mcp==1.26.0 && "
+                "uv venv --python /workspace/.venv/bin/python /tmp/chi-review-venv && "
+                "uv pip install --python /tmp/chi-review-venv/bin/python torch==2.8.0 "
+                "--index-url https://download.pytorch.org/whl/cpu && "
+                "uv pip install --python /tmp/chi-review-venv/bin/python transformers==5.6.2 "
+                "peft==0.21.0 accelerate==1.16.0 && mkdir -p /tmp/chi-review-base /tmp/chi-review-adapter"
+            ),
+        )
+        for source, target in (
+            ("review_proxy.py", "/tmp/review_proxy.py"),
+            ("advisor.py", self.scorer[1]),
+            ("choice_protocol.py", self.scorer[2]),
+        ):
+            await environment.upload_file(
+                source_path=Path(str(files("chi_dsh") / source)), target_path=target
+            )
+        for root, target, weight in assets:
+            for file in sorted(root.iterdir()):
+                if file.name == weight or file.suffix in (".json", ".jinja"):
+                    await environment.upload_file(
+                        source_path=file, target_path=f"{target}/{file.name}"
+                    )
