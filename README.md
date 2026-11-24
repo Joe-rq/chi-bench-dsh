@@ -10,6 +10,8 @@
 
 [ReJev 能拦住错误建包吗？](studies/provider-pa-02/README.md)　在首次建包前，对照必填项规则、MiniCPM5-2B 和 ReJev。附官方轨迹回放、自编案例和逐题预测。
 
+[复核意见能在写入前送达吗？](studies/provider-pa-03/README.md)　两道方向相反的公开案例，四次本地 DSH 运行，附逐题审计单和官方沙盒配对入口。
+
 ## 复现本地测试
 
 从本项目根目录运行。Python 3.12、uv、Git 和 SDK 支持的平台即可。首次安装需要联网，测试将请求发到本机回环地址。
